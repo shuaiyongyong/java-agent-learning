@@ -20,6 +20,9 @@
     <properties>
         <java.version>17</java.version>
         <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <!-- Spring Boot 3.4.2 默认管理的 Lombok 1.18.36 无法在 JDK 24 下进行注解处理，
+             覆盖为支持 JDK 24 的版本，否则 demo 包中的 @Builder/@Data 不会生成方法。 -->
+        <lombok.version>1.18.38</lombok.version>
     </properties>
 
     <dependencies>
@@ -42,8 +45,23 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-ollama</artifactId>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-spring-boot-starter</artifactId>
+            <version>1.11.8-beta19</version>
+        </dependency>
+        <!-- LangChain4j 核心库 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+        <!-- Ollama starter：自动配置名为 ollamaChatModel 的 OllamaChatModel Bean，
+             读取 application.properties 中的 langchain4j.ollama.chat-model.* 配置。
+             该 starter 已传递依赖 langchain4j-ollama。 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-ollama-spring-boot-starter</artifactId>
+            <version>1.11.8-beta19</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -67,6 +85,29 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <!-- JDK 24 的 javac 默认不再运行仅出现在 classpath 上的注解处理器，
+                 必须通过 annotationProcessorPaths 显式声明 Lombok，否则 @Builder/@Data 不生效。 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
             </plugin>
         </plugins>
     </build>
