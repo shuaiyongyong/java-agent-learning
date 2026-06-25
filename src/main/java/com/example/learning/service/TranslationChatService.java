@@ -8,19 +8,20 @@ import org.springframework.stereotype.Service;
 @Service
 @Component
 public class TranslationChatService {
-
-    private final ChatClient translatorClient;
-
-    // 构造器注入
-    public TranslationChatService(@Qualifier("translatorClient") ChatClient translatorClient) {
-        this.translatorClient = translatorClient;
-    }
+//
+//    private final ChatClient translatorClient;
+//
+//    // 构造器注入
+//    public TranslationChatService(@Qualifier("translatorClient") ChatClient translatorClient) {
+//        this.translatorClient = translatorClient;
+//    }
 
     public String chat(String message) {
-        return translatorClient
-                .prompt()
-                .user(message)
-                .call()
-                .content();
+        return message;
+//        return translatorClient
+//                .prompt()
+//                .user(message)
+//                .call()
+//                .content();
     }
 }
