@@ -3,6 +3,7 @@ package com.example.learning.service;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 /**
  * 基于 Spring AI ChatClient 的客服助手。
@@ -21,13 +22,24 @@ public class SpringAiCustomerService {
     }
 
     /**
-     * 接收用户消息，返回客服助手的回复。
+     * 接收用户消息，返回客服助手的回复（非流式）。
      */
     public String chat(String userMessage) {
         return customerServiceClient
                 .prompt()
                 .user(userMessage)
                 .call()
+                .content();
+    }
+
+    /**
+     * 接收用户消息，返回客服助手的流式回复。
+     */
+    public Flux<String> chatStream(String userMessage) {
+        return customerServiceClient
+                .prompt()
+                .user(userMessage)
+                .stream()
                 .content();
     }
 }

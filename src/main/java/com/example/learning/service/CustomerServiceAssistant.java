@@ -2,6 +2,7 @@ package com.example.learning.service;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.spring.AiService;
+import dev.langchain4j.service.TokenStream;
 
 import static dev.langchain4j.service.spring.AiServiceWiringMode.EXPLICIT;
 
@@ -11,8 +12,9 @@ import static dev.langchain4j.service.spring.AiServiceWiringMode.EXPLICIT;
  * 通过 {@link AiService} 声明式生成实现，绑定到 Spring 容器中名为 {@code langchainOllamaChatModel} 的
  * 模型 Bean（在 {@code LangChain4jOllamaConfig} 中根据
  * {@code langchain4j.ollama.chat-model.*} 配置手动创建）。
+ * 流式接口绑定到 {@code langchainOllamaStreamingChatModel}。
  */
-@AiService(wiringMode = EXPLICIT, chatModel = "langchainOllamaChatModel")
+@AiService(wiringMode = EXPLICIT, chatModel = "langchainOllamaChatModel", streamingChatModel = "langchainOllamaStreamingChatModel")
 public interface CustomerServiceAssistant {
 
     @SystemMessage("""
@@ -25,4 +27,9 @@ public interface CustomerServiceAssistant {
             4. 不要编造订单号、物流单号、优惠政策等具体信息；信息不足时主动向用户询问。
             """)
     String chat(String userMessage);
+
+    /**
+     * 流式聊天接口，返回 TokenStream，可通过 onPartialResponse 逐块接收回复。
+     */
+    TokenStream chatStream(String userMessage);
 }

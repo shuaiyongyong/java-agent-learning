@@ -1,6 +1,7 @@
 package com.example.learning.config;
 
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,19 @@ public class LangChain4jOllamaConfig {
             @Value("${langchain4j.ollama.chat-model.base-url}") String baseUrl,
             @Value("${langchain4j.ollama.chat-model.model-name}") String modelName) {
         return OllamaChatModel.builder()
+                .baseUrl(baseUrl)
+                .modelName(modelName)
+                .build();
+    }
+
+    /**
+     * LangChain4j 流式聊天模型 Bean，供 @AiService 的 streamingChatModel 属性引用。
+     */
+    @Bean
+    public OllamaStreamingChatModel langchainOllamaStreamingChatModel(
+            @Value("${langchain4j.ollama.chat-model.base-url}") String baseUrl,
+            @Value("${langchain4j.ollama.chat-model.model-name}") String modelName) {
+        return OllamaStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .modelName(modelName)
                 .build();
