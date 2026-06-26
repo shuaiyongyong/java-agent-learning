@@ -9,19 +9,17 @@ import org.springframework.stereotype.Service;
 @Component
 public class DefaultChatService {
 
-//    private final ChatClient defaultClient;
-//
-//    // 构造器注入
-//    public DefaultChatService(@Qualifier("defaultClient") ChatClient defaultClient) {
-//        this.defaultClient = defaultClient;
-//    }
+    private final ChatClient defaultClient;
+
+    public DefaultChatService(@Qualifier("defaultClient") ChatClient defaultClient) {
+        this.defaultClient = defaultClient;
+    }
 
     public String chat(String message) {
-        return message;
-//        return defaultClient
-//                .prompt()
-//                .user(message)
-//                .call()
-//                .content();
+        return defaultClient
+                .prompt()
+                .user(message)
+                .call()
+                .content();
     }
 }
