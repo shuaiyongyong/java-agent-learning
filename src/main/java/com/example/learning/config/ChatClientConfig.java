@@ -1,8 +1,11 @@
 package com.example.learning.config;
 
+import com.example.learning.service.WeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.tool.ToolCallbacks;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,8 +18,8 @@ public class ChatClientConfig {
             @Value("${spring.ai.ollama.base-url}") String baseUrl,
             @Value("${spring.ai.ollama.chat.options.model}") String model) {
         return OllamaChatModel.builder()
-                .ollamaApi(new org.springframework.ai.ollama.api.OllamaApi(baseUrl))
-                .defaultOptions(org.springframework.ai.ollama.api.OllamaOptions.builder()
+                .ollamaApi(new OllamaApi(baseUrl))
+                .defaultOptions(OllamaOptions.builder()
                         .model(model)
                         .build())
                 .build();
@@ -49,6 +52,13 @@ public class ChatClientConfig {
                         3. 如果问题超出电商客服范围，或需要核实用户身份/订单等隐私信息，礼貌地引导用户联系人工客服（热线 400-100-1688）。
                         4. 不要编造订单号、物流单号、优惠政策等具体信息；信息不足时主动向用户询问。
                         """)
+                .build();
+    }
+
+    @Bean
+    public ChatClient weatherClient(OllamaChatModel chatModel, WeatherService weatherService) {
+        return ChatClient.builder(chatModel)
+                .defaultTools(ToolCallbacks.from(weatherService))
                 .build();
     }
 }
