@@ -1,6 +1,7 @@
 package com.example.learning.controller;
 
-import com.example.learning.service.CustomerServiceAssistant;
+import com.example.learning.assistant.AgentAssistant;
+import com.example.learning.assistant.CustomerAssistant;
 import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -19,14 +20,17 @@ import java.io.IOException;
 public class AssistantController {
 
     @Resource
-    CustomerServiceAssistant customerServiceAssistant;
+    CustomerAssistant customerAssistant;
+
+    @Resource
+    AgentAssistant agentAssistant;
 
     /**
      * 非流式聊天接口（LangChain4j @AiService）。
      */
     @GetMapping("/customer")
     public String customer(@RequestParam String message) {
-        return customerServiceAssistant.chat(message);
+        return customerAssistant.chat(message);
     }
 
     /**
@@ -36,7 +40,38 @@ public class AssistantController {
     public SseEmitter customerStream(@RequestParam String message) {
         SseEmitter emitter = new SseEmitter(60_000L);
 
-        TokenStream tokenStream = customerServiceAssistant.chatStream(message);
+        TokenStream tokenStream = customerAssistant.chatStream(message);
+        tokenStream
+                .onPartialResponse(chunk -> {
+                    try {
+                        emitter.send(SseEmitter.event().data(chunk));
+                    } catch (IOException e) {
+                        emitter.completeWithError(e);
+                    }
+                })
+                .onCompleteResponse(resp -> emitter.complete())
+                .onError(emitter::completeWithError)
+                .start();
+
+        return emitter;
+    }
+
+    /**
+     * Agent 聊天接口（LangChain4j @AiService + @Tool 计算器）。
+     */
+    @GetMapping("/agent")
+    public String agent(@RequestParam String message) {
+        return agentAssistant.chat(message);
+    }
+
+    /**
+     * Agent 流式聊天接口（SSE），基于 LangChain4j TokenStream。
+     */
+    @GetMapping(value = "/agent/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter agentStream(@RequestParam String message) {
+        SseEmitter emitter = new SseEmitter(60_000L);
+
+        TokenStream tokenStream = agentAssistant.chatStream(message);
         tokenStream
                 .onPartialResponse(chunk -> {
                     try {

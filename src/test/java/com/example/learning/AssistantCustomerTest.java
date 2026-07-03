@@ -1,6 +1,6 @@
 package com.example.learning;
 
-import com.example.learning.service.CustomerServiceAssistant;
+import com.example.learning.assistant.CustomerAssistant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 class AssistantCustomerTest {
 
     @Autowired
-    private CustomerServiceAssistant customerServiceAssistant;
+    private CustomerAssistant customerAssistant;
 
     @Test
     void testChat_OrderQuery() {
-        String response = customerServiceAssistant.chat("你好，我想查询一下我的订单状态，订单号是123456");
+        String response = customerAssistant.chat("你好，我想查询一下我的订单状态，订单号是123456");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         // 客服助手的回复应该包含中文（用 contains 而非 matches，避免多行匹配问题）
@@ -37,7 +37,7 @@ class AssistantCustomerTest {
 
     @Test
     void testChat_ReturnExchange() {
-        String response = customerServiceAssistant.chat("我想退货，应该怎么操作？");
+        String response = customerAssistant.chat("我想退货，应该怎么操作？");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         // 客服助手的回复应该包含中文（用 codePoints 而非 matches，避免多行匹配问题）
@@ -49,7 +49,7 @@ class AssistantCustomerTest {
 
     @Test
     void testChat_OutOfScope() {
-        String response = customerServiceAssistant.chat("请帮我写一段Python代码实现快速排序");
+        String response = customerAssistant.chat("请帮我写一段Python代码实现快速排序");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         // 超出客服范围时，应该引导联系人工客服
@@ -59,7 +59,7 @@ class AssistantCustomerTest {
 
     @Test
     void testChat_Greeting() {
-        String response = customerServiceAssistant.chat("你好呀");
+        String response = customerAssistant.chat("你好呀");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         // 应该使用友好的语气，可能包含"亲"之类的称呼

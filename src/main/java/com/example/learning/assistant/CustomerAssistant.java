@@ -1,4 +1,4 @@
-package com.example.learning.service;
+package com.example.learning.assistant;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.spring.AiService;
@@ -15,7 +15,7 @@ import static dev.langchain4j.service.spring.AiServiceWiringMode.EXPLICIT;
  * 流式接口绑定到 {@code langchainOllamaStreamingChatModel}。
  */
 @AiService(wiringMode = EXPLICIT, chatModel = "langchainOllamaChatModel", streamingChatModel = "langchainOllamaStreamingChatModel")
-public interface CustomerServiceAssistant {
+public interface CustomerAssistant {
 
     @SystemMessage("""
             你是「悦购商城」的在线客服助手，名叫小悦。
