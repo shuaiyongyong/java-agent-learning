@@ -1,7 +1,8 @@
-package com.example.learning.controller;
+package com.example.learning.controller.langchain;
 
 import com.example.learning.assistant.AgentAssistant;
 import com.example.learning.assistant.CustomerAssistant;
+import com.example.learning.assistant.WeatherAssistant;
 import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,9 @@ public class AssistantController {
 
     @Resource
     AgentAssistant agentAssistant;
+
+    @Resource
+    WeatherAssistant weatherAssistant;
 
     /**
      * 非流式聊天接口（LangChain4j @AiService）。
@@ -72,6 +76,39 @@ public class AssistantController {
         SseEmitter emitter = new SseEmitter(60_000L);
 
         TokenStream tokenStream = agentAssistant.chatStream(message);
+        tokenStream
+                .onPartialResponse(chunk -> {
+                    try {
+                        emitter.send(SseEmitter.event().data(chunk));
+                    } catch (IOException e) {
+                        emitter.completeWithError(e);
+                    }
+                })
+                .onCompleteResponse(resp -> emitter.complete())
+                .onError(emitter::completeWithError)
+                .start();
+
+        return emitter;
+    }
+
+
+
+    /**
+     * Agent 聊天接口（LangChain4j @AiService + @Tool 计算器）。
+     */
+    @GetMapping("/weather")
+    public String weatherAgent(@RequestParam String message) {
+        return weatherAssistant.chat(message);
+    }
+
+    /**
+     * Agent 流式聊天接口（SSE），基于 LangChain4j TokenStream。
+     */
+    @GetMapping(value = "/weather/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter weatherAgentStream(@RequestParam String message) {
+        SseEmitter emitter = new SseEmitter(60_000L);
+
+        TokenStream tokenStream = weatherAssistant.chatStream(message);
         tokenStream
                 .onPartialResponse(chunk -> {
                     try {

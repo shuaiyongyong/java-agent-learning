@@ -1,6 +1,6 @@
 package com.example.learning;
 
-import com.example.learning.service.SpringAiCustomerService;
+import com.example.learning.service.springai.SpringAiCustomerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

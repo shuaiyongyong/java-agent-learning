@@ -1,6 +1,6 @@
-package com.example.learning.controller;
+package com.example.learning.controller.springai;
 
-import com.example.learning.service.SpringAiCustomerService;
+import com.example.learning.service.springai.SpringAiCustomerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +17,7 @@ import reactor.core.publisher.Flux;
  */
 @Slf4j
 @RestController
-@RequestMapping("/assistant")
+@RequestMapping("/springai")
 public class SpringAiCustomerController {
 
     private final SpringAiCustomerService springAiCustomerService;
@@ -29,7 +29,7 @@ public class SpringAiCustomerController {
     /**
      * 非流式聊天接口。
      */
-    @GetMapping("/springai")
+    @GetMapping("/chat")
     public String springaiChat(@RequestParam String message) {
         return springAiCustomerService.chat(message);
     }
@@ -37,7 +37,7 @@ public class SpringAiCustomerController {
     /**
      * 流式聊天接口（SSE）。
      */
-    @GetMapping(value = "/springai/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = "/streamChat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> springaiStream(@RequestParam String message) {
         return springAiCustomerService.chatStream(message);
     }

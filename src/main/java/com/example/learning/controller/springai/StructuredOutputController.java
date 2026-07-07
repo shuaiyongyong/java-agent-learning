@@ -1,7 +1,7 @@
-package com.example.learning.controller;
+package com.example.learning.controller.springai;
 
 import com.example.learning.record.Person;
-import com.example.learning.service.StructuredOutputService;
+import com.example.learning.service.springai.StructuredOutputService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;

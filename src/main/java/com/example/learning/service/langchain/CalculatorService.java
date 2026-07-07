@@ -1,4 +1,4 @@
-package com.example.learning.service;
+package com.example.learning.service.langchain;
 
 import dev.langchain4j.agent.tool.Tool;
 import org.springframework.stereotype.Service;

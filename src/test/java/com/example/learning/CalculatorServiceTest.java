@@ -1,6 +1,6 @@
 package com.example.learning;
 
-import com.example.learning.service.CalculatorService;
+import com.example.learning.service.langchain.CalculatorService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

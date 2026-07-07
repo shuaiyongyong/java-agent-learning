@@ -1,6 +1,7 @@
 package com.example.learning.config;
 
-import com.example.learning.service.WeatherService;
+import com.example.learning.service.langchain.WeatherService;
+import com.example.learning.service.springai.SpringAiWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -56,8 +57,9 @@ public class ChatClientConfig {
     }
 
     @Bean
-    public ChatClient weatherClient(OllamaChatModel chatModel, WeatherService weatherService) {
+    public ChatClient weatherClient(OllamaChatModel chatModel, SpringAiWeatherService weatherService) {
         return ChatClient.builder(chatModel)
+                .defaultSystem("你是一个天气查询助手。当用户请求查询某个城市的天气时，你必须调用 getWeather 工具，无论城市名是否常见。不要拒绝调用工具，也不要直接用自然语言回复天气查询。")
                 .defaultTools(ToolCallbacks.from(weatherService))
                 .build();
     }

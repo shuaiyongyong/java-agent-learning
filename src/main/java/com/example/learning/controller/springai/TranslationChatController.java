@@ -1,6 +1,6 @@
-package com.example.learning.controller;
+package com.example.learning.controller.springai;
 
-import com.example.learning.service.TranslationChatService;
+import com.example.learning.service.springai.TranslationChatService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;

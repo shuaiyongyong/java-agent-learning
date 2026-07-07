@@ -1,4 +1,4 @@
-package com.example.learning.service;
+package com.example.learning.service.springai;
 
 import com.example.learning.record.Person;
 import org.springframework.ai.chat.client.ChatClient;
