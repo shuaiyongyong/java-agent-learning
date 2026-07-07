@@ -1,6 +1,6 @@
 package com.example.learning.config;
 
-import com.example.learning.service.langchain.WeatherService;
+import com.example.learning.service.springai.ComprehensiveToolService;
 import com.example.learning.service.springai.SpringAiWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
@@ -17,10 +17,12 @@ public class ChatClientConfig {
     @Bean
     public OllamaChatModel ollamaChatModel(
             @Value("${spring.ai.ollama.base-url}") String baseUrl,
-            @Value("${spring.ai.ollama.chat.options.model}") String model) {
+            @Value("${spring.ai.ollama.chat.options.model}") String model,
+            @Value("${spring.ai.ollama.chat.options.temperature:0.7}") Double temperature) {
         return OllamaChatModel.builder()
                 .ollamaApi(new OllamaApi(baseUrl))
                 .defaultOptions(OllamaOptions.builder()
+                        .temperature(temperature)
                         .model(model)
                         .build())
                 .build();
@@ -57,10 +59,28 @@ public class ChatClientConfig {
     }
 
     @Bean
-    public ChatClient weatherClient(OllamaChatModel chatModel, SpringAiWeatherService weatherService) {
+    public ChatClient weatherClient(OllamaChatModel chatModel, SpringAiWeatherService springAiWeatherService) {
         return ChatClient.builder(chatModel)
                 .defaultSystem("你是一个天气查询助手。当用户请求查询某个城市的天气时，你必须调用 getWeather 工具，无论城市名是否常见。不要拒绝调用工具，也不要直接用自然语言回复天气查询。")
-                .defaultTools(ToolCallbacks.from(weatherService))
+                .defaultTools(ToolCallbacks.from(springAiWeatherService))
+                .build();
+    }
+
+    /**
+     * 综合助手专用 ChatClient，内置天气 + 计算 + 时间三大工具的 System Prompt 引导。
+     */
+    @Bean
+    public ChatClient comprehensiveClient(OllamaChatModel chatModel, ComprehensiveToolService comprehensiveToolService) {
+        return ChatClient.builder(chatModel)
+                .defaultSystem("""
+                        你是一个全能助手，具备以下三种能力：
+                        1. 天气查询：调用 getWeather 工具获取指定城市的天气信息。只要用户要求查天气，必须调用工具。
+                        2. 数学计算：调用 add / subtract / multiply / divide 工具完成加减乘除运算。
+                        3. 时间查询：调用 getCurrentTime 工具获取当前日期和时间。
+
+                        工具返回结果后，用自然语言组织最终答案回复用户。如果问题不属于以上三类，直接回答即可。
+                        """)
+                .defaultTools(ToolCallbacks.from(comprehensiveToolService))
                 .build();
     }
 }
