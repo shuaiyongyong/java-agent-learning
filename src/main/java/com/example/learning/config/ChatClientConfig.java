@@ -5,8 +5,8 @@ import com.example.learning.service.springai.SpringAiWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.ai.tool.ToolCallbacks;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,8 +20,8 @@ public class ChatClientConfig {
             @Value("${spring.ai.ollama.chat.options.model}") String model,
             @Value("${spring.ai.ollama.chat.options.temperature:0.7}") Double temperature) {
         return OllamaChatModel.builder()
-                .ollamaApi(new OllamaApi(baseUrl))
-                .defaultOptions(OllamaOptions.builder()
+                .ollamaApi(new OllamaApi.Builder().baseUrl(baseUrl).build())
+                .defaultOptions(OllamaChatOptions.builder()
                         .temperature(temperature)
                         .model(model)
                         .build())
@@ -59,18 +59,30 @@ public class ChatClientConfig {
     }
 
     @Bean
+    public SpringAiWeatherService springAiWeatherService() {
+        return new SpringAiWeatherService();
+    }
+
+    @Bean
     public ChatClient weatherClient(OllamaChatModel chatModel, SpringAiWeatherService springAiWeatherService) {
+        org.springframework.ai.tool.ToolCallback[] callbacks = ToolCallbacks.from(springAiWeatherService);
         return ChatClient.builder(chatModel)
                 .defaultSystem("你是一个天气查询助手。当用户请求查询某个城市的天气时，你必须调用 getWeather 工具，无论城市名是否常见。不要拒绝调用工具，也不要直接用自然语言回复天气查询。")
-                .defaultTools(ToolCallbacks.from(springAiWeatherService))
+                .defaultToolCallbacks(callbacks)
                 .build();
+    }
+
+    @Bean("springAiComprehensiveToolService")
+    public ComprehensiveToolService comprehensiveToolService() {
+        return new ComprehensiveToolService();
     }
 
     /**
      * 综合助手专用 ChatClient，内置天气 + 计算 + 时间三大工具的 System Prompt 引导。
      */
     @Bean
-    public ChatClient comprehensiveClient(OllamaChatModel chatModel, ComprehensiveToolService comprehensiveToolService) {
+    public ChatClient comprehensiveClient(OllamaChatModel chatModel, @org.springframework.beans.factory.annotation.Qualifier("springAiComprehensiveToolService") ComprehensiveToolService comprehensiveToolService) {
+        org.springframework.ai.tool.ToolCallback[] callbacks = ToolCallbacks.from(comprehensiveToolService);
         return ChatClient.builder(chatModel)
                 .defaultSystem("""
                         你是一个全能助手，具备以下三种能力：
@@ -80,7 +92,7 @@ public class ChatClientConfig {
 
                         工具返回结果后，用自然语言组织最终答案回复用户。如果问题不属于以上三类，直接回答即可。
                         """)
-                .defaultTools(ToolCallbacks.from(comprehensiveToolService))
+                .defaultToolCallbacks(callbacks)
                 .build();
     }
 }

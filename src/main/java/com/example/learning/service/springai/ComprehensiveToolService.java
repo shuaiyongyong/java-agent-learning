@@ -16,7 +16,6 @@ import java.time.format.DateTimeFormatter;
  * 在对话时将工具暴露给大模型，模型根据用户意图自主选择调用哪个工具。
  */
 @Slf4j
-@Service("springAiComprehensiveToolService")
 public class ComprehensiveToolService {
 
     // ==================== 天气查询工具 ====================

@@ -22,7 +22,7 @@ public class StructuredOutputService {
     }
 
     /**
-     * ChatClient.entity()
+     * ChatClient.entity(Class)
      * 代码更简洁，由框架自动处理 Prompt 构建和转换，是日常开发的首选。
      * */
     public Person extractPerson(String text) {
@@ -51,12 +51,14 @@ public class StructuredOutputService {
                 """;
         // 3. 创建 Prompt，并将转换器的格式指令注入到 {format} 占位符
         Prompt prompt = new Prompt(
-                new PromptTemplate(userText, Map.of("input", text, "format", converter.getFormat()))
+                PromptTemplate.builder()
+                        .template(userText)
+                        .variables(Map.of("input", text, "format", converter.getFormat()))
+                        .build()
                         .createMessage()
         );
         // 4. 调用模型并获取响应
         String response = defaultClient.prompt(prompt).call().content();
-        System.out.println("response is :" + response);
         // 5. 使用转换器将模型响应解析为 Person 对象
         return converter.convert(response);
     }

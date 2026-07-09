@@ -7,10 +7,7 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service
 public class SpringAiWeatherService {
-    // @Tool 注解会自动将该方法注册为一个 FunctionCallback，Spring AI 会扫描并生成对应的 JSON Schema 提供给模型。
-    // 工具描述中加入了错误处理提示，引导模型在工具执行失败时优雅降级。
     @Tool(description = """
             获取指定城市的当前天气温度和状况。
             用法：传入城市中文名（如"北京"、"上海"、"神秘城"等任意城市名）。
