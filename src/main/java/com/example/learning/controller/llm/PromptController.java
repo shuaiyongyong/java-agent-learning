@@ -1,4 +1,4 @@
-package com.example.learning.controller;
+package com.example.learning.controller.llm;
 
 import jakarta.annotation.Resource;
 import org.springframework.ai.chat.client.ChatClient;

@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class LLMConfig {
 
-
     @Value("${spring.ai.dashscope.api-key}")
     private String apiKey;
 
