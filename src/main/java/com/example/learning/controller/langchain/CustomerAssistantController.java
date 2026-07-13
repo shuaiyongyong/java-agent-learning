@@ -1,6 +1,6 @@
 package com.example.learning.controller.langchain;
 
-import com.example.learning.assistant.AgentAssistant;
+import com.example.learning.assistant.CustomerAssistant;
 import dev.langchain4j.service.TokenStream;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -15,28 +15,28 @@ import java.io.IOException;
 
 @Slf4j
 @RestController
-@RequestMapping("/assistant")
-public class AssistantController {
+@RequestMapping("/customer/assistant")
+public class CustomerAssistantController {
 
     @Resource
-    AgentAssistant agentAssistant;
+    CustomerAssistant customerAssistant;
 
     /**
-     * Agent 聊天接口（LangChain4j @AiService + @Tool 计算器）。
+     * 非流式聊天接口（LangChain4j @AiService）。
      */
-    @GetMapping("/agent")
-    public String agent(@RequestParam String message) {
-        return agentAssistant.chat(message);
+    @GetMapping("/customer")
+    public String customer(@RequestParam String message) {
+        return customerAssistant.chat(message);
     }
 
     /**
-     * Agent 流式聊天接口（SSE），基于 LangChain4j TokenStream。
+     * 流式聊天接口（SSE），基于 LangChain4j TokenStream。
      */
-    @GetMapping(value = "/agent/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter agentStream(@RequestParam String message) {
+    @GetMapping(value = "/customer/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter customerStream(@RequestParam String message) {
         SseEmitter emitter = new SseEmitter(60_000L);
 
-        TokenStream tokenStream = agentAssistant.chatStream(message);
+        TokenStream tokenStream = customerAssistant.chatStream(message);
         tokenStream
                 .onPartialResponse(chunk -> {
                     try {
