@@ -24,8 +24,6 @@ import java.util.Set;
 @Service
 public class LlmSwitchService {
 
-    private static final String CHAT_COMPLETIONS_PATH = "/v1/chat/completions";
-
     /** 流式响应的结束标记。 */
     private static final String STREAM_DONE = "[DONE]";
 
@@ -120,7 +118,7 @@ public class LlmSwitchService {
      */
     private WebClient.ResponseSpec post(LlmProviderPropertiesConfig.Provider provider, ChatCompletionRequest request) {
         return webClient.post()
-                .uri(provider.getBaseUrl() + CHAT_COMPLETIONS_PATH)
+                .uri(provider.getBaseUrl())
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + provider.getApiKey())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
