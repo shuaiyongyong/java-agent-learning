@@ -35,7 +35,10 @@ public class WeatherToolV3 {
             - 不支持的城市将返回 "暂未收录该城市"
             - 服务异常时抛出 RuntimeException，请据此告知用户
             """)
-    public WeatherResponse getWeather(@ToolParam(description = "城市名称，支持中英文，如'北京'或'Beijing'") String city) {
+    @dev.langchain4j.agent.tool.Tool("getWeather：查询指定城市的实时天气信息（city、temperature、description）。用户询问天气/温度/穿衣建议时必须调用，不可凭记忆回答。")
+    public WeatherResponse getWeather(
+            @ToolParam(description = "城市名称，支持中英文，如'北京'或'Beijing'")
+            @dev.langchain4j.agent.tool.P("城市名称，支持中英文，如'北京'或'Beijing'") String city) {
         logCall("V3", city);
         return mockWeather(city);
     }

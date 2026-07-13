@@ -127,4 +127,35 @@ public class AssistantController {
 
         return emitter;
     }
+
+
+    /**
+     * 天气查询
+     */
+    @GetMapping("/weather")
+    public String weather(@RequestParam String message) {
+        return weatherAssistant.chat(message);
+    }
+
+    /**
+     * 天气查询流式聊天接口（SSE），基于 LangChain4j TokenStream。
+     */
+    @GetMapping(value = "/weather/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter weatherStream(@RequestParam String message) {
+        SseEmitter emitter = new SseEmitter(60_000L);
+        TokenStream tokenStream = weatherAssistant.chatStream(message);
+        tokenStream
+                .onPartialResponse(chunk -> {
+                    try {
+                        emitter.send(SseEmitter.event().data(chunk));
+                    } catch (IOException e) {
+                        emitter.completeWithError(e);
+                    }
+                })
+                .onCompleteResponse(resp -> emitter.complete())
+                .onError(emitter::completeWithError)
+                .start();
+
+        return emitter;
+    }
 }

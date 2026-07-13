@@ -17,7 +17,10 @@ public class WeatherToolV0 {
             只要用户要求查询天气，必须调用此工具，不要直接用自然语言回复。
             如果工具执行报错或服务不可用，请告知用户暂时无法获取该城市天气，并建议用户稍后重试或查看其他天气来源。不要编造天气数据。
             """)
-    public WeatherResponse getWeather(@ToolParam(description = "城市名称，如 '北京'") String city) {
+    @dev.langchain4j.agent.tool.Tool("获取指定城市的当前天气温度和状况，传入城市中文名。只要用户要求查询天气就必须调用。")
+    public WeatherResponse getWeather(
+            @ToolParam(description = "城市名称，如 '北京'")
+            @dev.langchain4j.agent.tool.P("城市名称，如 '北京'") String city) {
         logCall("V0", city);
         return mockWeather(city);
     }

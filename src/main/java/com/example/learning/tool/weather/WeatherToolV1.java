@@ -26,7 +26,10 @@ public class WeatherToolV1 {
               用户："上海冷不冷？" → 调用 getWeather(city="上海")
               用户："明天会下雨吗？" → 追问："请问您想查询哪个城市的天气？"
             """)
-    public WeatherResponse getWeather(@ToolParam(description = "城市名称，支持中文或拼音，如'北京'、'Shanghai'") String city) {
+    @dev.langchain4j.agent.tool.Tool("查询任意城市的实时天气（温度、天气状况）。只要用户提到天气、气温、几度、下雨等关键词，立即调用本工具，禁止凭空猜测。")
+    public WeatherResponse getWeather(
+            @ToolParam(description = "城市名称，支持中文或拼音，如'北京'、'Shanghai'")
+            @dev.langchain4j.agent.tool.P("城市名称，支持中文或拼音，如'北京'、'Shanghai'") String city) {
         logCall("V1", city);
         return mockWeather(city);
     }

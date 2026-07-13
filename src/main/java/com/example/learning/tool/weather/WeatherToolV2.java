@@ -17,7 +17,10 @@ public class WeatherToolV2 {
             不管是大城市还是小城镇，只要说出城市名都可以查。如果查不到，就诚实地告诉用户暂时没有找到这个城市的天气数据。
             注意：不要用你自己知道的天气信息来回答，一定要调用这个工具来获取最新数据。
             """)
-    public WeatherResponse getWeather(@ToolParam(description = "要查询天气的城市名称，比如'北京'、'上海'、'广州'") String city) {
+    @dev.langchain4j.agent.tool.Tool("想知道某个城市现在热不热、要不要带伞？用这个工具查询任意城市的实时天气，不要凭记忆回答，一定要调用它获取最新数据。")
+    public WeatherResponse getWeather(
+            @ToolParam(description = "要查询天气的城市名称，比如'北京'、'上海'、'广州'")
+            @dev.langchain4j.agent.tool.P("要查询天气的城市名称，比如'北京'、'上海'、'广州'") String city) {
         logCall("V2", city);
         return mockWeather(city);
     }

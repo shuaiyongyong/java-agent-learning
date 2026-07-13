@@ -12,7 +12,10 @@ import org.springframework.stereotype.Service;
 public class WeatherToolV4 {
 
     @Tool(description = "查询城市天气，传入城市名即可。")
-    public WeatherResponse getWeather(@ToolParam(description = "城市名") String city) {
+    @dev.langchain4j.agent.tool.Tool("查询城市天气，传入城市名即可。")
+    public WeatherResponse getWeather(
+            @ToolParam(description = "城市名")
+            @dev.langchain4j.agent.tool.P("城市名") String city) {
         logCall("V4", city);
         return mockWeather(city);
     }

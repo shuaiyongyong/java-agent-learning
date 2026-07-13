@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
  * 确保各变体之间唯一的变量是 @Tool 的 description 文本。
  */
 @Configuration
-public class WeatherDescripTestConfig {
+public class WeatherConfig {
 
     private static final String SYSTEM_PROMPT = """
             你是一个智能助手，可以回答用户的各种问题。
