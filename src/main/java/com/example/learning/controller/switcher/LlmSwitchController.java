@@ -36,6 +36,7 @@ public class LlmSwitchController {
     /**
      * 同步对话。
      * 例：GET /switch/chat?provider=kimi&question=你好
+     * http://localhost:8081/switch/chat?provider=agnes-ai&system=你是一名资深气象服务专员，精通全球气候数据。为了提供准确的天气预报，你拥有一个专用的天气查询终端（getWeather 工具）。你的工作流程是：先判断用户意图，若涉及天气，优先操作终端获取数据，再用通俗易懂的语言转述给用户。&question=长沙今天得天气怎么样？
      */
     @GetMapping("/chat")
     public String chat(@RequestParam(required = false) String provider,

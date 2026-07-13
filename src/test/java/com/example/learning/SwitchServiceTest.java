@@ -1,6 +1,6 @@
 package com.example.learning;
 
-import com.example.learning.config.switcher.LlmProviderProperties;
+import com.example.learning.config.LlmProviderPropertiesConfig;
 import com.example.learning.service.switcher.LlmSwitchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +33,7 @@ class SwitchServiceTest {
     private final Map<String, String> lastRequest = new ConcurrentHashMap<>();
 
     private LlmSwitchService switchService;
-    private LlmProviderProperties properties;
+    private LlmProviderPropertiesConfig properties;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -59,16 +59,16 @@ class SwitchServiceTest {
 
         // 2. 手工构建两家供应商配置，均指向本地 stub，但 model / api-key 不同，
         //    以此证明切换时确实使用了各自 provider 的配置
-        properties = new LlmProviderProperties();
+        properties = new LlmProviderPropertiesConfig();
         properties.setDefaultProvider("alpha");
 
-        LlmProviderProperties.Provider alpha = new LlmProviderProperties.Provider();
+        LlmProviderPropertiesConfig.Provider alpha = new LlmProviderPropertiesConfig.Provider();
         alpha.setBaseUrl(baseUrl);
         alpha.setApiKey("key-alpha");
         alpha.setModel("model-alpha");
         alpha.setTemperature(0.7);
 
-        LlmProviderProperties.Provider beta = new LlmProviderProperties.Provider();
+        LlmProviderPropertiesConfig.Provider beta = new LlmProviderPropertiesConfig.Provider();
         beta.setBaseUrl(baseUrl);
         beta.setApiKey("key-beta");
         beta.setModel("model-beta");
@@ -149,7 +149,7 @@ class SwitchServiceTest {
 
     @Test
     void chat_missingApiKey_throws() {
-        LlmProviderProperties.Provider broken = new LlmProviderProperties.Provider();
+        LlmProviderPropertiesConfig.Provider broken = new LlmProviderPropertiesConfig.Provider();
         broken.setBaseUrl("http://127.0.0.1:1");
         broken.setModel("m");
         // 故意不设置 api-key

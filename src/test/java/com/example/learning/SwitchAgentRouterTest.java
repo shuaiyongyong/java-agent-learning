@@ -1,6 +1,6 @@
 package com.example.learning;
 
-import com.example.learning.config.switcher.LlmProviderProperties;
+import com.example.learning.config.LlmProviderPropertiesConfig;
 import com.example.learning.service.switcher.LlmSwitchService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,7 +42,7 @@ class SwitchAgentRouterTest {
     private LlmSwitchService llmSwitchService;
 
     @Autowired
-    private LlmProviderProperties properties;
+    private LlmProviderPropertiesConfig properties;
 
     private HttpServer server;
     /** stub 记录最近一次收到的请求信息。 */
@@ -72,7 +72,7 @@ class SwitchAgentRouterTest {
         server.start();
 
         // 把 agent-router 的 base-url 临时指向本地 stub，model / api-key 保持配置文件里的真实值
-        LlmProviderProperties.Provider provider = properties.getProviders().get(PROVIDER);
+        LlmProviderPropertiesConfig.Provider provider = properties.getProviders().get(PROVIDER);
         assertNotNull(provider, "application.properties 中应存在 llm.providers.agent-router 配置");
         originalBaseUrl = provider.getBaseUrl();
         provider.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
@@ -94,7 +94,7 @@ class SwitchAgentRouterTest {
         assertTrue(llmSwitchService.listProviders().contains(PROVIDER),
                 "已配置的供应商中应包含 agent-router，实际: " + llmSwitchService.listProviders());
 
-        LlmProviderProperties.Provider provider = properties.getProviders().get(PROVIDER);
+        LlmProviderPropertiesConfig.Provider provider = properties.getProviders().get(PROVIDER);
         // base-url 已在 setUp 中改指向 stub，这里校验其余从配置文件加载的真实值
         assertEquals("claude-opus-4-8", provider.getModel(), "agent-router 模型应为 claude-opus-4-8");
         assertNotNull(provider.getApiKey(), "agent-router 的 api-key 不应为空");
@@ -104,7 +104,7 @@ class SwitchAgentRouterTest {
 
     @Test
     void chat_viaAgentRouter_usesAgentRouterModelAndKey() {
-        LlmProviderProperties.Provider provider = properties.getProviders().get(PROVIDER);
+        LlmProviderPropertiesConfig.Provider provider = properties.getProviders().get(PROVIDER);
 
         // 切换到 agent-router 供应商发起同步调用
         String reply = llmSwitchService.chat(PROVIDER, "你是一个乐于助人的助手", "你好");

@@ -1,4 +1,4 @@
-package com.example.learning.config.switcher;
+package com.example.learning.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Component
 @ConfigurationProperties(prefix = "llm")
 @Data
-public class LlmProviderProperties {
+public class LlmProviderPropertiesConfig {
 
     /** 未显式指定 provider 时使用的默认供应商 key。 */
     private String defaultProvider;

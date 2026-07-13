@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-A learning project (`java-agent-learning`) exploring LLM integration in Java/Spring Boot. It is a single Spring Boot app that deliberately demonstrates **three different ways** to call a local Ollama model, so expect parallel/overlapping implementations rather than one canonical path. Code comments and prompts are in Chinese.
+A learning project (`java-agent-learning`) exploring LLM integration in Java/Spring Boot. It demonstrates **multiple parallel approaches** to calling LLMs: Spring AI (Ollama + Alibaba DashScope), LangChain4j (@AiService + @Tool), and raw HTTP. Code comments and prompts are in Chinese.
 
 ## Commands
 
@@ -12,7 +12,7 @@ A learning project (`java-agent-learning`) exploring LLM integration in Java/Spr
 # Run the app (requires Ollama running at http://localhost:11434)
 mvn spring-boot:run
 
-# Override the Ollama model (default qwen2.5:7b) or base URL via env vars
+# Override env vars
 OLLAMA_MODEL=llama3.1 mvn spring-boot:run
 OLLAMA_BASE_URL=http://host:11434 mvn spring-boot:run
 
@@ -22,31 +22,77 @@ mvn clean package
 # Run all tests
 mvn test
 
-# Run a single test class / method
+# Run a single test
 mvn test -Dtest=JavaAgentLearningApplicationTests
 mvn test -Dtest=JavaAgentLearningApplicationTests#methodName
 ```
 
-Requirements: JDK 17, Maven 3.8+, a running local Ollama. `spring.ai.ollama.init.pull-model-strategy=always` means Spring AI will attempt to pull the configured model on startup, so the model name must be valid/available to Ollama.
+Requirements: JDK 17+, Maven 3.8+, running local Ollama. Spring AI will auto-pull the configured model on startup (`spring.ai.ollama.init.pull-model-strategy=always`).
 
 ## Architecture
 
-Three independent LLM-access mechanisms coexist. When adding or modifying a feature, identify which mechanism the endpoint belongs to first.
+The project is organized by **integration mechanism**, not by MVC layers. When adding or modifying a feature, identify which mechanism it belongs to first.
 
-1. **Spring AI `ChatClient`** (the primary, most-developed path)
-   - `config/ChatClientConfig.java` defines named `ChatClient` beans (`defaultClient`, `translatorClient`) — the translator bean bakes in a system prompt. **This is the key wiring file**: services inject a specific client by name via `@Qualifier`.
-   - Flow: `controller/*Controller` → `service/*Service` (constructor-injected `@Qualifier` ChatClient) → Ollama.
-   - Endpoints: `/default/chat`, `/translation/chat`, `/output/person` & `/output/personConverter`.
-   - Structured output (`StructuredOutputService`) shows two techniques side by side: high-level `ChatClient.entity(Class)` vs. low-level `BeanOutputConverter` with manual `{format}` prompt injection. Target type is the `record/Person` record.
+### 1. Spring AI via Ollama (primary path)
 
-2. **LangChain4j `@AiService` interfaces** (`service/OllamaAssistant`, `service/OpenAiAssistant`)
-   - Declarative AI services using `@AiService(wiringMode = EXPLICIT, chatModel = "...")`. No implementation — LangChain4j generates the proxy and wires it to a named chat model bean (`ollamaChatModel` / `openAiChatModel`).
-   - Exposed at `/assistant/chat`. Note `OpenAiAssistant` references `openAiChatModel`, configured under the separate `langchain4j.open-ai.*` properties.
+- **Wiring**: `config/ChatClientConfig.java` defines named `ChatClient` beans, each with a baked-in system prompt and/or tools:
+  - `defaultClient` — bare-bones chat
+  - `translatorClient` — translation specialist
+  - `customerServiceClient` — e-commerce customer service bot
+  - `weatherClient` — weather query (wired with `SpringAiWeatherService`)
+  - `comprehensiveClient` — all-in-one assistant (wired with `ComprehensiveToolService` for weather + math + time)
+- **Flow**: `controller/springai/*Controller` → `service/springai/*Service` (inject `ChatClient` via `@Qualifier`) → Ollama
+- **Endpoints**: `/default/chat`, `/translation/chat`, `/springai/chat`, `/springai/streamChat`, `/weather/chat`, `/comprehensive/chat`, `/comprehensive/chat/stream`, `/output/person`, `/output/personConverter`
+- **Structured output**: `StructuredOutputService` shows two techniques: `ChatClient.entity(Class)` (high-level) vs `BeanOutputConverter` + manual `{format}` prompt injection (low-level). Target type: `record/Person`.
+- **Tools**: `SpringAiWeatherService` and `ComprehensiveToolService` use `@org.springframework.ai.tool.annotation.Tool` + `@ToolParam`.
 
-3. **Raw HTTP demo** (`demo/` package)
-   - `OllamaClient` calls the Ollama `/api/chat` endpoint directly with `java.net.http.HttpClient`, handling both streaming and non-streaming modes manually. `OllamaChatExample` has a `main()` and is a standalone runnable example, **not** part of the Spring web app. `ChatBody` is its Lombok request DTO.
+### 2. Spring AI via Alibaba DashScope (Spring AI Alibaba)
 
-## Configuration notes
+- **Wiring**: `config/LLMConfig.java` defines `ChatModel` and `ChatClient` beans backed by Alibaba DashScope API:
+  - `deepseek` / `deepseekChatClient` — DeepSeek-V3 model
+  - `qwen` / `qwenChatClient` — Qwen-Max model
+- **API key**: stored in `application.properties` as `spring.ai.dashscope.api-key`
+- **Endpoints**: `/prompt/chat` through `/prompt/chat4` (demonstrates ChatClient chain API, ChatModel manual Prompt construction, streaming, and sync calls)
 
-- `src/main/resources/application.properties` holds **two separate config namespaces**: `spring.ai.ollama.*` (mechanism 1) and `langchain4j.ollama.*` / `langchain4j.open-ai.*` (mechanism 2). They configure different models independently — changing one does not affect the other.
-- UTF-8 is forced across Tomcat/servlet encoding (for Chinese I/O). Some comment lines in `application.properties` render as `?` due to encoding.
+### 3. LangChain4j @AiService (declarative AI services)
+
+- **Interfaces** in `assistant/` package:
+  - `CustomerAssistant` — e-commerce bot (mirror of Spring AI customer service)
+  - `AgentAssistant` — calculator agent (wired with `CalculatorService` via `tools = {"calculatorService"}`)
+  - `WeatherAssistant` — weather query (wired with `WeatherService` via `tools = {"weatherService"}`)
+  - `ComprehensiveAssistant` — all-in-one (wired with `service/langchain/ComprehensiveToolService` covering weather + math + time)
+- **Wiring**: `config/LangChain4jOllamaConfig.java` manually creates `langchainOllamaChatModel` and `langchainOllamaStreamingChatModel` beans. LangChain4j's auto-config is excluded in `application.properties` to avoid bean name conflicts with Spring AI's `ollamaChatModel`.
+- **Flow**: `controller/langchain/AssistantController` → `assistant/*` interfaces (proxy-generated by LangChain4j) → Ollama
+- **Endpoints**: `/assistant/customer`, `/assistant/customer/stream`, `/assistant/agent`, `/assistant/agent/stream`, `/assistant/comprehensive`, `/assistant/comprehensive/stream`
+- **Tools**: LangChain4j `@Tool` annotations on `service/langchain/CalculatorService`, `WeatherService`, `ComprehensiveToolService`.
+
+### 4. Raw HTTP demo (standalone)
+
+- `demo/OllamaClient` — direct HTTP calls to Ollama `/api/chat` using `java.net.http.HttpClient`, with manual streaming and non-streaming modes.
+- `demo/OllamaChatExample` — standalone `main()` method demonstrating usage. Not part of the Spring web app.
+- `demo/ChatBody` — Lombok DTO for the Ollama request body.
+
+### Data records
+
+- `record/Person` — name + age, used for structured output demos.
+- `record/response/WeatherResponse` — city, temperature, description.
+- `record/request/WeatherRequest` — city parameter.
+
+## Configuration
+
+- `src/main/resources/application.properties` has **three config namespaces**:
+  - `spring.ai.ollama.*` — Spring AI + Ollama (mechanism 1)
+  - `spring.ai.dashscope.*` — Spring AI Alibaba + DashScope (mechanism 2)
+  - `langchain4j.ollama.*` — LangChain4j + Ollama (mechanism 3)
+- `spring.autoconfigure.exclude` disables both Spring AI's Ollama auto-config and LangChain4j's Ollama auto-config to avoid bean conflicts.
+- `spring.main.allow-bean-definition-overriding=true` — needed because Spring AI and LangChain4j both try to register beans with overlapping names.
+- UTF-8 encoding is forced for Tomcat/servlet (Chinese I/O).
+- Lombok version overridden to 1.18.38 for JDK 24 compatibility; `annotationProcessorPaths` explicitly declared in `pom.xml`.
+
+## Dependencies
+
+- Spring Boot 3.4.2
+- Spring AI 1.0.0-M6 (milestone release, requires spring-milestones repo)
+- LangChain4j 1.11.8 (core) + 1.11.8-beta19 (spring boot starters)
+- Spring AI Alibaba 1.1.2.0 (DashScope agent framework)
+- Guava 18.0, Fastjson 1.2.83, Hutool 5.8.22 (utility libraries)

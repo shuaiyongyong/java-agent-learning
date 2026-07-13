@@ -1,6 +1,6 @@
 package com.example.learning.service.switcher;
 
-import com.example.learning.config.switcher.LlmProviderProperties;
+import com.example.learning.config.LlmProviderPropertiesConfig;
 import com.example.learning.record.openai.ChatCompletionRequest;
 import com.example.learning.record.openai.ChatCompletionResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,11 +29,11 @@ public class LlmSwitchService {
     /** 流式响应的结束标记。 */
     private static final String STREAM_DONE = "[DONE]";
 
-    private final LlmProviderProperties properties;
+    private final LlmProviderPropertiesConfig properties;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
-    public LlmSwitchService(LlmProviderProperties properties, ObjectMapper objectMapper) {
+    public LlmSwitchService(LlmProviderPropertiesConfig properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
         // 通用 WebClient：base-url / 鉴权头在每次请求时按所选 provider 动态设置
@@ -55,7 +55,7 @@ public class LlmSwitchService {
      * @param question    用户问题
      */
     public String chat(String providerKey, String system, String question) {
-        LlmProviderProperties.Provider provider = resolveProvider(providerKey);
+        LlmProviderPropertiesConfig.Provider provider = resolveProvider(providerKey);
         ChatCompletionRequest request = buildRequest(provider, system, question, false);
 
         ChatCompletionResponse response = post(provider, request)
@@ -73,7 +73,7 @@ public class LlmSwitchService {
      * @param question    用户问题
      */
     public Flux<String> streamChat(String providerKey, String system, String question) {
-        LlmProviderProperties.Provider provider = resolveProvider(providerKey);
+        LlmProviderPropertiesConfig.Provider provider = resolveProvider(providerKey);
         ChatCompletionRequest request = buildRequest(provider, system, question, true);
 
         return post(provider, request)
@@ -87,12 +87,12 @@ public class LlmSwitchService {
     /**
      * 根据 key 解析供应商配置；key 为空时回退到默认供应商。
      */
-    private LlmProviderProperties.Provider resolveProvider(String providerKey) {
+    private LlmProviderPropertiesConfig.Provider resolveProvider(String providerKey) {
         String key = StringUtils.hasText(providerKey) ? providerKey : properties.getDefaultProvider();
         if (!StringUtils.hasText(key)) {
             throw new IllegalArgumentException("未指定供应商且未配置 llm.default-provider");
         }
-        LlmProviderProperties.Provider provider = properties.getProviders().get(key);
+        LlmProviderPropertiesConfig.Provider provider = properties.getProviders().get(key);
         if (provider == null) {
             throw new IllegalArgumentException("未找到供应商配置：" + key + "，可用：" + listProviders());
         }
@@ -105,7 +105,7 @@ public class LlmSwitchService {
     /**
      * 组装 OpenAI 兼容请求体。
      */
-    private ChatCompletionRequest buildRequest(LlmProviderProperties.Provider provider,
+    private ChatCompletionRequest buildRequest(LlmProviderPropertiesConfig.Provider provider,
                                                String system, String question, boolean stream) {
         var messages = new java.util.ArrayList<ChatCompletionRequest.Message>();
         if (StringUtils.hasText(system)) {
@@ -118,7 +118,7 @@ public class LlmSwitchService {
     /**
      * 按所选供应商发起 POST 请求，动态设置 URL 与 Bearer 鉴权。
      */
-    private WebClient.ResponseSpec post(LlmProviderProperties.Provider provider, ChatCompletionRequest request) {
+    private WebClient.ResponseSpec post(LlmProviderPropertiesConfig.Provider provider, ChatCompletionRequest request) {
         return webClient.post()
                 .uri(provider.getBaseUrl() + CHAT_COMPLETIONS_PATH)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + provider.getApiKey())
