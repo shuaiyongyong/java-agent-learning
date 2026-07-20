@@ -85,13 +85,13 @@ public class LangChain4jOllamaConfig {
      * ChatMemoryProvider Bean，供 @AiService 通过 chatMemoryProvider = "chatMemoryProvider" 引用。
      * <p>
      * 为每个唯一的 memoryId 创建独立的 MessageWindowChatMemory，
-     * 最多保留 20 条消息（系统消息除外），实现滑动窗口记忆。
+     * 最多保留 10 条消息（系统消息除外），实现滑动窗口记忆。
      */
     @Bean
     public ChatMemoryProvider chatMemoryProvider(ChatMemoryStore chatMemoryStore) {
         return memoryId -> MessageWindowChatMemory.builder()
                 .id(memoryId)
-                .maxMessages(20)
+                .maxMessages(10)
                 .chatMemoryStore(chatMemoryStore)
                 .build();
     }

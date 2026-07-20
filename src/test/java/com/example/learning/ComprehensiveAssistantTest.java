@@ -200,4 +200,51 @@ class ComprehensiveAssistantTest {
         assertFalse(bReply.contains("小华"),
                 "B 会话不应知道 A 会话的名字'小华'，实际: " + bReply);
     }
+
+    @Test
+    @DisplayName("[多轮对话] 消息窗口溢出：超过10条后旧消息被丢弃")
+    void langchain_messageWindowEviction() {
+        String memoryId = "eviction-test-" + System.currentTimeMillis();
+
+        // 第1轮：告诉助手一个独特的标识信息——"我叫阿强"
+        String message = langchainAssistant.chat(memoryId, "你好，我叫阿强");
+        System.out.println(message);
+        // 中间插入大量无关对话，挤占消息窗口
+        // 每条对话都产生 2 条消息（用户 + AI），10 条消息窗口 ≈ 5 轮完整对话
+        // 发送 8 轮无关对话后，总消息数约 16 条，最早的第1轮应已被挤出窗口
+        for (int i = 1; i <= 8; i++) {
+           String msg = langchainAssistant.chat(memoryId, "这是第 " + i + " 轮无关对话，请简单回复收到");
+            System.out.println(msg);
+        }
+        // 最后询问名字：如果记忆窗口正常溢出，助手应该已经"忘记"了"阿强"
+        String reply = langchainAssistant.chat(memoryId, "你知道我叫什么名字吗？");
+        assertNotNull(reply);
+        System.out.println("=== [消息窗口溢出] 最终回复 ===");
+        System.out.println(reply);
+        // 由于第1轮的"我叫阿强"已被挤出10条消息窗口，
+        // 助手中不再有这条记忆，不应能答出"阿强"
+        assertFalse(reply.contains("阿强"),
+                "期望旧消息已被挤出窗口，助手不应记得'阿强'，实际: " + reply);
+    }
+
+    @Test
+    @DisplayName("[多轮对话] 消息窗口未满时记忆仍有效")
+    void langchain_messageWindowStillWorksWithinLimit() {
+        String memoryId = "window-limit-test-" + System.currentTimeMillis();
+
+        // 第1轮：告诉助手名字
+        langchainAssistant.chat(memoryId, "你好，我叫阿花");
+
+        // 只插入 2 轮无关对话，总消息数约 6 条，仍在10条窗口内
+        langchainAssistant.chat(memoryId, "请简单回复收到");
+        langchainAssistant.chat(memoryId, "再回复一下");
+
+        // 此时"我叫阿花"仍在消息窗口中，助手应该还记得
+        String reply = langchainAssistant.chat(memoryId, "你知道我叫什么名字吗？");
+        assertNotNull(reply);
+        System.out.println("=== [窗口内记忆] 最终回复 ===");
+        System.out.println(reply);
+        assertTrue(reply.contains("阿花"),
+                "期望助手仍记得'阿花'（消息在窗口内），实际: " + reply);
+    }
 }
