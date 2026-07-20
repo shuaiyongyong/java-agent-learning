@@ -55,7 +55,8 @@
         </dependency>
         <!-- Ollama starter：自动配置名为 ollamaChatModel 的 OllamaChatModel Bean，
              读取 application.properties 中的 langchain4j.ollama.chat-model.* 配置。
-             该 starter 已传递依赖 langchain4j-ollama。 -->
+             该 starter 已传递依赖 langchain4j-ollama。
+             注意：ChatMemory（MessageWindowChatMemory + ChatMemoryStore）已在 langchain4j 核心库中提供。 -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-ollama-spring-boot-starter</artifactId>

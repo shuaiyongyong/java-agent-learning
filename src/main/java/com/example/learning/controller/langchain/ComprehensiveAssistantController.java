@@ -26,7 +26,7 @@ public class ComprehensiveAssistantController {
      */
     @GetMapping("/comprehensive")
     public String comprehensive(@RequestParam String message) {
-        return comprehensiveAssistant.chat(message);
+        return comprehensiveAssistant.chat("default-session", message);
     }
 
     /**
@@ -36,7 +36,7 @@ public class ComprehensiveAssistantController {
     public SseEmitter comprehensiveStream(@RequestParam String message) {
         SseEmitter emitter = new SseEmitter(60_000L);
 
-        TokenStream tokenStream = comprehensiveAssistant.chatStream(message);
+        TokenStream tokenStream = comprehensiveAssistant.chatStream("default-session", message);
         tokenStream
                 .onPartialResponse(chunk -> {
                     try {

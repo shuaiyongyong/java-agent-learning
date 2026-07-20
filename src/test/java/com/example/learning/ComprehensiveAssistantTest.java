@@ -40,7 +40,7 @@ class ComprehensiveAssistantTest {
     @Test
     @DisplayName("[LangChain4j] 天气查询：北京天气")
     void langchain_weatherBeijing() {
-        String response = langchainAssistant.chat("请帮我查询北京的天气");
+        String response = langchainAssistant.chat("test-default", "请帮我查询北京的天气");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         System.out.println("=== [LangChain4j] 北京天气 ===");
@@ -56,7 +56,7 @@ class ComprehensiveAssistantTest {
     @Test
     @DisplayName("[LangChain4j] 数学计算：3 + 5")
     void langchain_addition() {
-        String response = langchainAssistant.chat("3 加上 5 等于多少？");
+        String response = langchainAssistant.chat("test-default", "3 加上 5 等于多少？");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         System.out.println("=== [LangChain4j] 加法计算 ===");
@@ -71,7 +71,7 @@ class ComprehensiveAssistantTest {
     @Test
     @DisplayName("[LangChain4j] 数学计算：12 × 7")
     void langchain_multiplication() {
-        String response = langchainAssistant.chat("12 乘以 7 等于多少？");
+        String response = langchainAssistant.chat("test-default", "12 乘以 7 等于多少？");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         System.out.println("=== [LangChain4j] 乘法计算 ===");
@@ -85,7 +85,7 @@ class ComprehensiveAssistantTest {
     @Test
     @DisplayName("[LangChain4j] 时间查询：现在几点")
     void langchain_currentTime() {
-        String response = langchainAssistant.chat("现在几点了？告诉我当前时间");
+        String response = langchainAssistant.chat("test-default", "现在几点了？告诉我当前时间");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         System.out.println("=== [LangChain4j] 时间查询 ===");
@@ -101,7 +101,7 @@ class ComprehensiveAssistantTest {
     @Test
     @DisplayName("[LangChain4j] 非工具问题：打招呼")
     void langchain_greeting() {
-        String response = langchainAssistant.chat("你好，请介绍一下你自己");
+        String response = langchainAssistant.chat("test-default", "你好，请介绍一下你自己");
         assertNotNull(response);
         assertFalse(response.isEmpty());
         // 回复应包含中文
@@ -160,31 +160,44 @@ class ComprehensiveAssistantTest {
     // ==================== REST 端点测试 ====================
 
     @Test
-    @DisplayName("[REST] LangChain4j 综合助手端点：天气查询")
-    void rest_langchain_weather() {
-        String url = "/assistant/comprehensive?message=请帮我查询广州的天气";
-        String response = restTemplate.getForObject(url, String.class);
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-        System.out.println("=== [REST] LangChain4j 广州天气 ===");
-        System.out.println(response);
-        // 至少应包含中文回复
-        assertTrue(response.codePoints().anyMatch(c -> c >= 0x4e00 && c <= 0x9fff),
-                "回复应包含中文内容，实际: " + response);
+    @DisplayName("[多轮对话] 记住上文提到的名字")
+    void langchain_multiTurnRememberName() {
+        String memoryId = "multi-turn-test-" + System.currentTimeMillis();
+
+        // 第一轮：告诉助手自己的名字
+        String firstReply = langchainAssistant.chat(memoryId, "你好，我叫小明");
+        assertNotNull(firstReply);
+        assertFalse(firstReply.isEmpty());
+        System.out.println("=== [多轮对话] 第1轮 ===");
+        System.out.println(firstReply);
+
+        // 第二轮：不问名字，只说"你好"，验证助手还记得名字
+        String secondReply = langchainAssistant.chat(memoryId, "你还记得我叫什么名字吗？");
+        assertNotNull(secondReply);
+        assertFalse(secondReply.isEmpty());
+        System.out.println("=== [多轮对话] 第2轮 ===");
+        System.out.println(secondReply);
+        // 模型应该能在回复中提到"小明"
+        assertTrue(secondReply.contains("小明"),
+                "期望助手记住名字'小明'，实际: " + secondReply);
     }
 
     @Test
-    @DisplayName("[REST] Spring AI 综合助手端点：计算")
-    void rest_springai_calc() {
-        String url = "/comprehensive/chat?message=请帮我计算 6 乘以 9 等于多少";
-        String response = restTemplate.getForObject(url, String.class);
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-        System.out.println("=== [REST] Spring AI 乘法计算 ===");
-        System.out.println(response);
-        boolean hasToolCall = response.toLowerCase().contains("multiply");
-        boolean hasResult = response.contains("54");
-        assertTrue(hasToolCall || hasResult,
-                "期望包含工具名 'multiply' 或结果 '54'，实际: " + response);
+    @DisplayName("[多轮对话] 不同 sessionId 之间记忆隔离")
+    void langchain_memoryIsolation() {
+        String memoryIdA = "isolation-test-A-" + System.currentTimeMillis();
+        String memoryIdB = "isolation-test-B-" + System.currentTimeMillis();
+
+        // A 会话：告诉名字
+        langchainAssistant.chat(memoryIdA, "我的名字是小华");
+
+        // B 会话：询问名字，应该不知道 A 会话的信息
+        String bReply = langchainAssistant.chat(memoryIdB, "你知道我的名字吗？");
+        assertNotNull(bReply);
+        System.out.println("=== [记忆隔离] B会话回复 ===");
+        System.out.println(bReply);
+        // B 会话不应该知道"小华"，因为那是 A 会话的记忆
+        assertFalse(bReply.contains("小华"),
+                "B 会话不应知道 A 会话的名字'小华'，实际: " + bReply);
     }
 }

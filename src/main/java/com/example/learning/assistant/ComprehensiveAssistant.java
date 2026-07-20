@@ -1,6 +1,8 @@
 package com.example.learning.assistant;
 
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.spring.AiService;
 import dev.langchain4j.service.TokenStream;
 
@@ -16,7 +18,8 @@ import static dev.langchain4j.service.spring.AiServiceWiringMode.EXPLICIT;
 @AiService(wiringMode = EXPLICIT,
         chatModel = "langchainOllamaChatModel",
         streamingChatModel = "langchainOllamaStreamingChatModel",
-        tools = {"comprehensiveToolService"})
+        tools = {"comprehensiveToolService"},
+        chatMemoryProvider = "chatMemoryProvider")
 public interface ComprehensiveAssistant {
 
     @SystemMessage("""
@@ -33,11 +36,12 @@ public interface ComprehensiveAssistant {
             - 始终使用简体中文，语气友好、专业。
             - 工具返回结果后，用自然语言组织最终答案回复用户。
             - 如果问题不属于以上三类，直接回答即可。
+            - 请牢记上文对话中提到的关键信息（如人名、偏好等），以便在多轮对话中保持上下文连贯。
             """)
-    String chat(String userMessage);
+    String chat(@MemoryId Object memoryId, @UserMessage String userMessage);
 
     /**
      * 流式聊天接口，返回 TokenStream，可通过 onPartialResponse 逐块接收回复。
      */
-    TokenStream chatStream(String userMessage);
+    TokenStream chatStream(@MemoryId Object memoryId, @UserMessage String userMessage);
 }
