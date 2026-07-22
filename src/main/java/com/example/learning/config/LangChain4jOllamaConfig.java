@@ -9,10 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * LangChain4j 的 Ollama 模型配置。
  * <p>
@@ -23,6 +19,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * （{@code dev.langchain4j.ollama.spring.AutoConfig}），保留 Spring AI 的 {@code ollamaChatModel}
  * （被 ChatClient 按类型注入），并在此手动声明 LangChain4j 的模型 Bean，使用独立名称
  * {@code langchainOllamaChatModel} 供 {@code @AiService} 按名称引用。
+ * <p>
+ * 多轮对话记忆通过 {@link JdbcChatMemoryStore} 持久化到 MySQL 数据库，
+ * 应用重启后对话历史可自动恢复。
  */
 @Configuration
 public class LangChain4jOllamaConfig {
@@ -53,32 +52,18 @@ public class LangChain4jOllamaConfig {
     // ==================== 多轮对话记忆 ====================
 
     /**
-     * 基于 ConcurrentHashMap 的 ChatMemoryStore 实现，支持多会话隔离。
+     * 基于 JDBC（MySQL 数据库）的 ChatMemoryStore Bean。
      * <p>
-     * 默认的 {@code SingleSlotChatMemoryStore} 只能保存一个会话的消息，
-     * 无法区分不同用户的对话。此实现使用 ConcurrentHashMap 以 memoryId 为 key
-     * 存储各自的聊天消息列表，从而实现多轮对话记忆。
+     * 替代原来的 ConcurrentHashMap 实现，使对话消息持久化到磁盘。
+     * 应用重启后，MessageWindowChatMemory 会从数据库加载历史消息，
+     * 实现跨会话的记忆恢复。
+     * <p>
+     * 注意：此处返回 JdbcChatMemoryStore 实例，Spring 会自动注入已标注 @Component 的同类 Bean。
+     * 为保证 Bean 名称一致，直接复用 JdbcChatMemoryStore 的 Spring Bean。
      */
     @Bean
-    public ChatMemoryStore chatMemoryStore() {
-        return new ChatMemoryStore() {
-            private final Map<Object, List<dev.langchain4j.data.message.ChatMessage>> store = new ConcurrentHashMap<>();
-
-            @Override
-            public List<dev.langchain4j.data.message.ChatMessage> getMessages(Object memoryId) {
-                return store.getOrDefault(memoryId, List.of());
-            }
-
-            @Override
-            public void updateMessages(Object memoryId, List<dev.langchain4j.data.message.ChatMessage> messages) {
-                store.put(memoryId, List.copyOf(messages));
-            }
-
-            @Override
-            public void deleteMessages(Object memoryId) {
-                store.remove(memoryId);
-            }
-        };
+    public ChatMemoryStore chatMemoryStore(JdbcChatMemoryStore jdbcChatMemoryStore) {
+        return jdbcChatMemoryStore;
     }
 
     /**
@@ -86,6 +71,7 @@ public class LangChain4jOllamaConfig {
      * <p>
      * 为每个唯一的 memoryId 创建独立的 MessageWindowChatMemory，
      * 最多保留 10 条消息（系统消息除外），实现滑动窗口记忆。
+     * 底层存储通过 JdbcChatMemoryStore 持久化到 MySQL 数据库。
      */
     @Bean
     public ChatMemoryProvider chatMemoryProvider(ChatMemoryStore chatMemoryStore) {

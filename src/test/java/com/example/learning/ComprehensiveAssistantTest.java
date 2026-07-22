@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +35,9 @@ class ComprehensiveAssistantTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     // ==================== LangChain4j 测试 ====================
 
@@ -246,5 +250,65 @@ class ComprehensiveAssistantTest {
         System.out.println(reply);
         assertTrue(reply.contains("阿花"),
                 "期望助手仍记得'阿花'（消息在窗口内），实际: " + reply);
+    }
+
+    // ==================== JDBC 持久化测试 ====================
+
+    @Test
+    @DisplayName("[JDBC持久化] 对话历史写入数据库后可查询验证")
+    void langchain_jdbcPersistenceVerifiable() {
+        String memoryId = "jdbc-persist-test-" + System.currentTimeMillis();
+
+        // 第1轮：告诉助手名字
+        langchainAssistant.chat(memoryId, "你好，我叫小鹏");
+
+        // 验证数据库中确实写入了消息记录
+        int rowCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM MEMORY_MESSAGES WHERE MEMORY_ID = ?",
+                Integer.class, memoryId);
+        // 每轮对话写入 2 条消息（用户 + AI）
+        assertTrue(rowCount >= 2,
+                "期望数据库至少有 2 条记录，实际: " + rowCount);
+        System.out.println("=== [JDBC持久化] 数据库写入记录数: " + rowCount + " ===");
+
+        // 第2轮：验证助手还能记住名字
+        String reply = langchainAssistant.chat(memoryId, "你还记得我叫什么名字吗？");
+        assertNotNull(reply);
+        System.out.println("=== [JDBC持久化] 第2轮回复 ===");
+        System.out.println(reply);
+        assertTrue(reply.contains("小鹏"),
+                "助手应能从数据库恢复记忆并记住名字，实际: " + reply);
+    }
+
+    @Test
+    @DisplayName("[JDBC持久化] 多会话数据在数据库中相互隔离")
+    void langchain_jdbcSessionIsolation() {
+        String memoryIdA = "jdbc-isolation-A-" + System.currentTimeMillis();
+        String memoryIdB = "jdbc-isolation-B-" + System.currentTimeMillis();
+
+        // A 会话：写入"我叫阿A"
+        langchainAssistant.chat(memoryIdA, "你好，我叫阿A");
+
+        // B 会话：写入"我叫阿B"
+        langchainAssistant.chat(memoryIdB, "你好，我叫阿B");
+
+        // 验证数据库中两个会话的记录互不干扰
+        int countA = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM MEMORY_MESSAGES WHERE MEMORY_ID = ?",
+                Integer.class, memoryIdA);
+        int countB = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM MEMORY_MESSAGES WHERE MEMORY_ID = ?",
+                Integer.class, memoryIdB);
+
+        System.out.println("=== [JDBC持久化] 会话A记录数: " + countA + "，会话B记录数: " + countB + " ===");
+        assertTrue(countA >= 2, "会话A至少有2条记录");
+        assertTrue(countB >= 2, "会话B至少有2条记录");
+
+        // 验证 B 会话不记得 A 的名字
+        String bReply = langchainAssistant.chat(memoryIdB, "你知道我的名字吗？");
+        System.out.println("=== [JDBC持久化] B会话回复 ===");
+        System.out.println(bReply);
+        assertFalse(bReply.contains("阿A"),
+                "B 会话不应知道 A 会话的名字'阿A'，实际: " + bReply);
     }
 }
